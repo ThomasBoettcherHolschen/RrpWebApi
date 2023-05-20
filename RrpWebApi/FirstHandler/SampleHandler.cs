@@ -1,6 +1,6 @@
 ﻿namespace RrpWebApi.FirstHandler;
 
-public class SampleHandler : IHandleChange<SampleRequest, SampleResponse>
+public class SampleHandler : HandlerBase<SampleRequest, SampleResponse> , IHandleChange<SampleRequest, SampleResponse>
 {
     public Task<SampleResponse> HandleAsync(SampleRequest request, CancellationToken cancellationToken)
     {

@@ -1,6 +1,5 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
-using System.Text.Json;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using RrpWebApi;
@@ -19,47 +18,28 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Order seems to matter here.  
+// Order seems to matter here. UseServiceProviderFactory must be after all things that register in services.  
 builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory());
 builder.Host.ConfigureContainer<ContainerBuilder>(containerBuilder =>
 {
-    containerBuilder.RegisterAssemblyTypes(assembly).AsClosedTypesOf(typeof(IHandleChange<,>));
+    // register all handlers. Handlers should inherit from HandlerBase. Handlerbase implements IRegisterEndpoint. 
+    // so all handlers will be registered as IRegisterEndpoint.
+    // this gives us the ability to loop through all the registrations of IRegisterEndpoint and call RegisterEndpoint on each one.
+    // so all handlers got WebApi Endpoints registered automatically.
+    containerBuilder.RegisterAssemblyTypes(assembly).AsClosedTypesOf(typeof(IHandleChange<,>)).AsImplementedInterfaces();
 });
 var app = builder.Build();
 
 app.UseSwagger();
 app.UseSwaggerUI();
 
-var logger = app.Services.GetService<ILogger<Program>>();
-var handlers = assembly.GetTypes().Where(item => item.IsClosedTypeOf(typeof(IHandleChange<,>)));
-foreach (var handlerType in handlers)
+// Loop through all the registrations of IRegisterEndpoint and call RegisterEndpoint on each one.
+var endpointRegistrations = app.Services.GetServices<IRegisterEndpoint>();
+foreach (var registration in endpointRegistrations)
 {
-    logger.LogInformation("Found handler {Handler}, Arguments:{@Arguments}", handlerType.FullName, handlerType.GetGenericArguments());
-    
-    var implementedInterface = handlerType.GetInterfaces().FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IHandleChange<,>));
-
-    if (implementedInterface != null)
-    {
-        var requestType = implementedInterface.GetGenericArguments().First(); 
-        var responseType = implementedInterface.GenericTypeArguments.Last();
-
-
-        app.MapPost($"/api/{requestType.Name}", async (HttpContext context) =>
-            {
-                var handler = context.RequestServices.GetService(handlerType);
-                var request = await JsonSerializer.DeserializeAsync(context.Request.Body, requestType,
-                    cancellationToken: context.RequestAborted);
-                var method = handlerType.GetMethod("HandleAsync");
-                var response = await (dynamic) method.Invoke(handler, new[] { request, context.RequestAborted });
-                return TypedResults.Ok(response);
-            })
-            .Accepts(requestType, "application/json")
-            .Produces(StatusCodes.Status200OK, responseType)
-            .Produces(StatusCodes.Status400BadRequest)
-            .WithDescription(
-                $"Request Reponse Pattern using Request : {requestType.Name} and Response : {responseType.Name}")
-            .WithName(requestType.Name);
-
-    }
+    await registration.RegisterEndpoint(app);
 }
+
 app.Run();
+
+
