@@ -2,8 +2,7 @@
 
 namespace RrpWebApi;
 
-// Handlerbase is a generic class that implements IRegisterEndpoint and is used to register endpoints
-public class HandlerBase<TRequest, TResponse> : IRegisterEndpoint
+public class HandlerRegisterer<TRequest, TResponse> : IRegisterEndpoint
 {
     public Task RegisterEndpoint(IEndpointRouteBuilder builder)
     {

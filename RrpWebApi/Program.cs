@@ -14,7 +14,6 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
     .ReadFrom.Services(services)
     .Enrich.FromLogContext());
 
-
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -22,11 +21,25 @@ builder.Services.AddSwaggerGen();
 builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory());
 builder.Host.ConfigureContainer<ContainerBuilder>(containerBuilder =>
 {
-    // register all handlers. Handlers should inherit from HandlerBase. Handlerbase implements IRegisterEndpoint. 
-    // so all handlers will be registered as IRegisterEndpoint.
-    // this gives us the ability to loop through all the registrations of IRegisterEndpoint and call RegisterEndpoint on each one.
-    // so all handlers got WebApi Endpoints registered automatically.
+
     containerBuilder.RegisterAssemblyTypes(assembly).AsClosedTypesOf(typeof(IHandleChange<,>)).AsImplementedInterfaces();
+
+    // get all closed types of IHandlerChange<,> 
+    var handlerTypes = assembly.GetTypes().Where(t => t.IsClosedTypeOf(typeof(IHandleChange<,>)));
+    foreach (var handlerType in handlerTypes)
+    {
+        // get the generic arguments of the IHandleChange<,> interface that is implemented by the handler type.
+        var genericArguments = handlerType.GetInterfaces()
+            .Single(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IHandleChange<,>))
+            .GetGenericArguments();
+        
+        // get the generic type definition of HandlerRegisterer
+        var registererType = typeof(HandlerRegisterer<,>);
+        // create a closed type of HandlerRegisterer with the generic arguments of the handler type.
+        var closedRegistererType = registererType.MakeGenericType(genericArguments);
+        // register the closed type of HandlerRegisterer as IRegisterEndpoint
+        containerBuilder.RegisterType(closedRegistererType).As<IRegisterEndpoint>();
+    }
 });
 var app = builder.Build();
 
