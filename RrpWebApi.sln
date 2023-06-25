@@ -2,12 +2,16 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RrpWebApi", "RrpWebApi\RrpWebApi.csproj", "{D5E55BA8-A525-4D04-B368-2E8393DB02D0}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "_build", "build\_build.csproj", "{2033F150-F230-4005-9E65-267DF86D181E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2033F150-F230-4005-9E65-267DF86D181E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2033F150-F230-4005-9E65-267DF86D181E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D5E55BA8-A525-4D04-B368-2E8393DB02D0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{D5E55BA8-A525-4D04-B368-2E8393DB02D0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D5E55BA8-A525-4D04-B368-2E8393DB02D0}.Release|Any CPU.ActiveCfg = Release|Any CPU
